@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>مرحله ۶ — آزمون مجموعه‌ها (A , B — ترکیبی)</title>
+<style>
+  :root{
+    --bg:#071028; --card:#0f2336; --accent:#66f0ff; --gold:#ffd67c;
+    --good:#7ef3b0; --bad:#ff7b7b; --muted:#aee9f3aa;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:22px; font-family: Vazirmatn, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    background: linear-gradient(180deg,#041022,#071429);
+    color:#e8fbff; text-align:center;
+  }
+  h1{ margin:6px 0 10px; color:var(--accent); }
+  p.lead{ color:var(--muted); margin-top:4px; }
+
+  .container{ max-width:980px; margin:14px auto 60px; padding:16px; text-align:right; }
+
+  .info{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); margin-bottom:12px; color:#dff; }
+
+  /* venn */
+  .ven{ position:relative; height:340px; margin:18px auto; width:100%; max-width:760px; }
+  .circle{ position:absolute; width:320px; height:320px; border-radius:50%; top:10px; transition:all .18s ease; }
+  /* A and B positioned to overlap centered */
+  #A { left: calc(50% - 240px); background: radial-gradient(circle at 30% 30%, rgba(110,160,255,0.12), transparent 40%), rgba(20,50,90,0.08); border:2px solid rgba(120,170,255,0.18); }
+  #B { left: calc(50% - 80px); background: radial-gradient(circle at 70% 70%, rgba(160,255,200,0.06), transparent 40%), rgba(20,50,90,0.06); border:2px solid rgba(140,200,180,0.12); }
+  /* subtle overlap curve by SVG mask (so they visually form a single smooth overlap) */
+  #overlapMask{ position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; }
+
+  .label{ position:absolute; top:10px; font-weight:900; color:#ffeaa8; font-size:18px; }
+  .label.A{ left: calc(50% - 240px + 18px); } .label.B{ left: calc(50% - 80px + 232px); } /* place labels near circle edges */
+
+  /* slots (numbers) */
+  .slot{ position:absolute; font-weight:900; color:#eafcff; font-size:18px; user-select:none; transform:translate(-50%,-50%); }
+  .slot.inter{ color:#ffd; } /* visually slightly different */
+
+  /* quiz area */
+  .quiz{ margin-top:12px; display:grid; gap:12px; grid-template-columns: 1fr; }
+
+  .card{ background:var(--card); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); text-align:right; }
+  .question{ font-weight:800; margin-bottom:8px; color:#dff; }
+
+  /* braces + flexible input (single input per question; students can type multiple numbers separated by comma)  */
+  .braces{ font-weight:900; color:#ffd; display:inline-flex; align-items:center; gap:8px; direction:ltr; }
+  .brace-open, .brace-close{ color:var(--gold); font-size:20px; }
+  .num-input{ min-width:140px; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:#e8fbff; text-align:left; font-weight:800; direction:ltr; }
+
+  .small-note{ color:var(--muted); font-size:13px; margin-top:6px; text-align:left; }
+
+  /* true/false */
+  .tf { display:flex; gap:12px; justify-content:flex-start; margin-top:6px; }
+  .tf button{ padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:#e8fbff; cursor:pointer; }
+  .tf button.selected{ box-shadow: 0 6px 18px rgba(102,240,255,0.06); background:linear-gradient(90deg,#02363b, #053a4a); }
+
+  /* controls */
+  .controls{ display:flex; gap:12px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+  .btn{ padding:10px 16px; border-radius:10px; border:none; cursor:pointer; font-weight:900; color:#022; background:linear-gradient(90deg,#66f0ff,#9ef4c8); }
+  .btn.ghost{ background:transparent; color:#9feaff; border:1px solid rgba(159,238,248,0.12); }
+
+  /* timer */
+  .timer{ font-weight:900; color:#ffd67c; }
+
+  /* results */
+  .results{ margin-top:16px; text-align:right; }
+  .result-line{ display:flex; gap:10px; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; margin-bottom:8px; background: rgba(0,0,0,0.06); }
+  .ok{ color:var(--good); font-weight:900; } .nok{ color:var(--bad); font-weight:900; }
+  .explain{ color:#cfe; font-size:13px; margin-top:6px; }
+
+  .final-q{ margin-top:12px; display:flex; gap:12px; justify-content:center; }
+
+  @media (max-width:720px){
+    .ven{ height:380px }
+    .circle{ width:260px; height:260px; top:30px }
+    #A{ left: calc(50% - 220px) } #B{ left: calc(50% - 60px) }
+    .label.A{ left: calc(50% - 220px + 18px) } .label.B{ left: calc(50% - 60px + 202px) }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>مرحله ۶ — آزمون ترکیبی مجموعه‌ها</h1>
+    <p class="lead">نمودار و سوال‌ها آماده است — زمان: <span class="timer" id="timer">05:00</span></p>
+
+    <div class="info" id="infoBox" style="text-align:right;">
+      <div>مجموعه‌ها (پیش‌فرض برای این آزمون — فقط برای نمایش):</div>
+      <div style="margin-top:8px; font-weight:900;">A = { 1 , 2 , 3 , 4 , 5 , 9 } &nbsp;&nbsp;&nbsp; B = { 3 , 4 , 5 , 6 , 7 }</div>
+      <div style="margin-top:8px; color:var(--muted)">نمودار: دو دایره که همپوشانی دارند — اشتراکِ وسط شامل: 3 , 4 , 5</div>
+    </div>
+
+    <!-- Venn -->
+    <div class="ven" aria-hidden="false">
+      <!-- circles overlap by left coordinates above -->
+      <div id="A" class="circle" aria-label="مجموعه A"></div>
+      <div id="B" class="circle" aria-label="مجموعه B"></div>
+
+      <svg id="overlapMask" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;">
+        <!-- decorative only -->
+      </svg>
+
+      <div class="label A">A</div>
+      <div class="label B">B</div>
+
+      <!-- numbers placed to match overlapping: 3,4,5 are central (in intersection) -->
+      <!-- A-only numbers (1,2,9) placed to the left area of overlap -->
+      <div id="slot-1" class="slot" style="left: calc(50% - 240px + 80px); top:170px">۱</div>
+      <div id="slot-2" class="slot" style="left: calc(50% - 240px + 120px); top:220px">۲</div>
+      <div id="slot-9" class="slot" style="left: calc(50% - 240px + 100px); top:120px">۹</div>
+
+      <!-- intersection numbers (center region) -->
+      <div id="slot-3" class="slot inter" style="left:50%; top:160px">۳</div>
+      <div id="slot-4" class="slot inter" style="left:54%; top:200px">۴</div>
+      <div id="slot-5" class="slot inter" style="left:48%; top:240px">۵</div>
+
+      <!-- B-only numbers (6,7) to the right area of overlap -->
+      <div id="slot-6" class="slot" style="left: calc(50% - 80px + 220px); top:130px">۶</div>
+      <div id="slot-7" class="slot" style="left: calc(50% - 80px + 260px); top:230px">۷</div>
+    </div>
+
+    <!-- quiz -->
+    <div class="quiz" id="quizArea">
+
+      <!-- Q1: B - A  (flexible input, students type numbers separated by comma) -->
+      <div class="card" id="q1">
+        <div class="question">الف) محاسبه کنید: <strong dir="ltr">B − A</strong> =</div>
+        <div style="direction:ltr; display:flex; align-items:center; gap:8px; justify-content:flex-end;">
+          <div class="braces" aria-hidden="true">
+            <span class="brace-open">{</span>
+            <input id="q1-input" class="num-input" placeholder="" aria-label="جواب B منهای A" />
+            <span class="brace-close">}</span>
+          </div>
+        </div>
+        <div class="small-note">عددها را با ویرگول جدا کن. تعداد دلخواه — ترتیب اهمیتی ندارد. (مثال صحیح: <code>6,7</code>)</div>
+      </div>
+
+      <!-- Q2: n(A ∪ B) = 8 (no braces) -->
+      <div class="card" id="q2">
+        <div class="question">ب) مقدارِ زیر را وارد کنید: <strong dir="ltr">n(A ∪ B) =</strong></div>
+        <div style="direction:ltr; display:flex; align-items:center; gap:8px; justify-content:flex-end;">
+          <input id="q2-input" class="num-input" placeholder="" aria-label="n(A ∪ B)" />
+        </div>
+        <div class="small-note">این مقدار یک عدد است (بدون آکولاد). مثال صحیح: <code>8</code></div>
+      </div>
+
+      <!-- Q3: (A − B) ∪ (A ∩ B) = -->
+      <div class="card" id="q3">
+        <div class="question">ج) محاسبه کنید: <strong dir="ltr">(A − B) ∪ (A ∩ B)</strong> =</div>
+        <div style="direction:ltr; display:flex; align-items:center; gap:8px; justify-content:flex-end;">
+          <div class="braces" aria-hidden="true">
+            <span class="brace-open">{</span>
+            <input id="q3-input" class="num-input" placeholder="" aria-label="جواب عبارت ج" />
+            <span class="brace-close">}</span>
+          </div>
+        </div>
+        <div class="small-note">آزاد: چند عدد بنویسید، با ویرگول جدا کنید. پاسخ درست برابر مجموعهٔ A است.</div>
+      </div>
+
+      <!-- Q4: {1,4} ∈ A ? -->
+      <div class="card" id="q4">
+        <div class="question">د) عبارتِ زیر درست یا نادرست است؟ <strong dir="ltr">{1,4} ∈ A</strong></div>
+        <div class="tf" role="radiogroup" aria-label="{1,4} عضو A است؟">
+          <button id="q4-true">درست</button>
+          <button id="q4-false">نادرست</button>
+        </div>
+        <div class="small-note">دقت کن: منظور از ∈ عضویتِ یک شی در مجموعه است (ریاضی به‌صورت چپ→راست نمایش داده شده).</div>
+      </div>
+
+      <!-- Q5: 7 ∈ B ? -->
+      <div class="card" id="q5">
+        <div class="question">ه) عبارتِ زیر درست یا نادرست است؟ <strong dir="ltr">7 ∈ B</strong></div>
+        <div class="tf" role="radiogroup" aria-label="7 عضو B است؟">
+          <button id="q5-true">درست</button>
+          <button id="q5-false">نادرست</button>
+        </div>
+      </div>
+
+    </div> <!-- quiz -->
+
+    <div class="controls">
+      <button class="btn" id="startBtn">شروع / ریست تایمر (۵ دقیقه)</button>
+      <button class="btn ghost" id="finishBtn">پایان آزمون و بررسی جواب‌ها</button>
+    </div>
+
+    <div id="resultsArea" class="results" aria-live="polite"></div>
+
+    <div id="finalChoice" style="display:none; margin-top:12px;">
+      <div class="final-q">
+        <div style="color:#dff; font-weight:900">آیا این مباحث را خوب یاد گرفتی؟</div>
+        <div style="display:flex; gap:8px">
+          <button class="btn" id="learnedYes">بله</button>
+          <button class="btn ghost" id="learnedNo">خیر</button>
+        </div>
+      </div>
+      <div id="learnedMsg" style="margin-top:8px; font-weight:900; color:#ffd67c"></div>
+    </div>
+
+  </div>
+
+<script>
+/* ---------- داده‌ها و جواب‌ها (پنهان تا زمان اتمام آزمون) ---------- */
+const A = [1,2,3,4,5,9];
+const B = [3,4,5,6,7];
+const universe = [1,2,3,4,5,6,7,8,9];
+
+const correctAnswers = {
+  q1: [6,7],                 // B - A
+  q2: 8,                     // n(A ∪ B)
+  q3: [1,2,3,4,5,9],         // (A−B) ∪ (A∩B) == A
+  q4: false,                 // {1,4} ∈ A ? -> false
+  q5: true                   // 7 ∈ B -> true
+};
+
+/* ---------- المان‌ها ---------- */
+const timerEl = document.getElementById('timer');
+const startBtn = document.getElementById('startBtn');
+const finishBtn = document.getElementById('finishBtn');
+const resultsArea = document.getElementById('resultsArea');
+
+const q1Input = document.getElementById('q1-input');
+const q2Input = document.getElementById('q2-input');
+const q3Input = document.getElementById('q3-input');
+
+const q4True = document.getElementById('q4-true'), q4False = document.getElementById('q4-false');
+const q5True = document.getElementById('q5-true'), q5False = document.getElementById('q5-false');
+
+const finalChoice = document.getElementById('finalChoice');
+const learnedYes = document.getElementById('learnedYes'), learnedNo = document.getElementById('learnedNo');
+const learnedMsg = document.getElementById('learnedMsg');
+
+let timerInterval = null;
+let timeLeft = 300; // 5 minutes
+let selectedQ4 = null, selectedQ5 = null;
+
+/* ---------- کمکی: قالب‌بندی خودکار ورودیها (قرار دادن ویرگول بین اعداد هنگام تایپ) ---------- */
+function normalizeListString(s){
+  // remove spaces, allow digits and commas only, compress multiple commas, trim
+  return s.replace(/\s+/g,'').replace(/，/g,',').replace(/,+/g,',').replace(/[^0-9,]/g,'').replace(/^,|,$/g,'');
+}
+function inputListToArray(s){
+  if(!s) return [];
+  const norm = normalizeListString(s);
+  if(norm === '') return [];
+  return norm.split(',').filter(x=>x!=='').map(x=>Number(x));
+}
+[q1Input, q3Input].forEach(inp=>{
+  inp.addEventListener('input', e=>{
+    const caret = inp.selectionStart;
+    const before = inp.value;
+    const norm = normalizeListString(before);
+    inp.value = norm;
+    // try to keep caret roughly in place
+    inp.setSelectionRange(Math.min(caret, inp.value.length), Math.min(caret, inp.value.length));
+  });
+});
+q2Input.addEventListener('input', e=>{
+  q2Input.value = q2Input.value.replace(/[^\d]/g,'');
+});
+
+/* ---------- انتخاب درست/نادرست (tf) ---------- */
+function toggleTF(button, q){
+  if(q === 'q4'){
+    if(button === q4True){ selectedQ4 = true; q4True.classList.add('selected'); q4False.classList.remove('selected'); }
+    else { selectedQ4 = false; q4False.classList.add('selected'); q4True.classList.remove('selected'); }
+  } else {
+    if(button === q5True){ selectedQ5 = true; q5True.classList.add('selected'); q5False.classList.remove('selected'); }
+    else { selectedQ5 = false; q5False.classList.add('selected'); q5True.classList.remove('selected'); }
+  }
+}
+q4True.addEventListener('click', ()=> toggleTF(q4True,'q4'));
+q4False.addEventListener('click', ()=> toggleTF(q4False,'q4'));
+q5True.addEventListener('click', ()=> toggleTF(q5True,'q5'));
+q5False.addEventListener('click', ()=> toggleTF(q5False,'q5'));
+
+/* ---------- تایمر ---------- */
+function formatTime(s){
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  return mm + ':' + ss;
+}
+function startTimer(){
+  clearInterval(timerInterval);
+  timeLeft = 300;
+  timerEl.textContent = formatTime(timeLeft);
+  timerInterval = setInterval(()=> {
+    timeLeft--;
+    timerEl.textContent = formatTime(timeLeft);
+    if(timeLeft <= 0){
+      clearInterval(timerInterval);
+      autoFinish();
+    }
+  },1000);
+}
+
+/* ---------- اعتبارسنجی و مقایسه مجموعه‌ها ---------- */
+function asSetEqual(arr, arr2){
+  const a = [...new Set(arr)].filter(x=>!Number.isNaN(x)).map(Number).sort((x,y)=>x-y);
+  const b = [...new Set(arr2)].filter(x=>!Number.isNaN(x)).map(Number).sort((x,y)=>x-y);
+  if(a.length !== b.length) return false;
+  for(let i=0;i<a.length;i++) if(a[i] !== b[i]) return false;
+  return true;
+}
+
+/* ---------- جمع‌آوری و نمره‌دهی ---------- */
+function gradeAll(){
+  const lines = [];
+  let total = 0;
+
+  // Q1
+  const arr1 = inputListToArray(q1Input.value);
+  if(asSetEqual(arr1, correctAnswers.q1)){
+    total += 10;
+    lines.push({ id:'q1', ok:true, text:`الف) درست — B − A = { ${correctAnswers.q1.join(' ، ')} } — نمره: 10` });
+  } else {
+    lines.push({ id:'q1', ok:false, text:`الف) نادرست — جواب صحیح: { ${correctAnswers.q1.join(' ، ')} }` });
+  }
+
+  // Q2 (number)
+  const nVal = Number(q2Input.value.trim());
+  if(!Number.isNaN(nVal) && nVal === correctAnswers.q2){
+    total += 10;
+    lines.push({ id:'q2', ok:true, text:`ب) درست — n(A ∪ B) = ${correctAnswers.q2} — نمره: 10` });
+  } else {
+    lines.push({ id:'q2', ok:false, text:`ب) نادرست — جواب صحیح: ${correctAnswers.q2}` });
+  }
+
+  // Q3
+  const arr3 = inputListToArray(q3Input.value);
+  if(asSetEqual(arr3, correctAnswers.q3)){
+    total += 10;
+    lines.push({ id:'q3', ok:true, text:`ج) درست — (A − B) ∪ (A ∩ B) = { ${correctAnswers.q3.join(' ، ')} } — نمره: 10` });
+  } else {
+    lines.push({ id:'q3', ok:false, text:`ج) نادرست — جواب صحیح: { ${correctAnswers.q3.join(' ، ')} }` });
+  }
+
+  // Q4: {1,4} ∈ A  — expected false
+  if(selectedQ4 === null){
+    lines.push({ id:'q4', ok:false, text:'د) پاسخی انتخاب نشده است.' });
+  } else {
+    const ok = (selectedQ4 === correctAnswers.q4);
+    if(ok){
+      total += 10;
+      // If student selected false -> correct -> message "آفرین"
+      lines.push({ id:'q4', ok:true, text:`د) پاسخ شما درست است — آفرین! "{1,4}" یک مجموعه است و به عنوان یک عنصر در A نیست.` });
+    } else {
+      // student chose 'درست' which is wrong
+      lines.push({ id:'q4', ok:false, text:`د) نادرست — نه؛ دقت کن: نباید اعداد را داخل آکولاد بگذاری و بگویی مجموعه در مجموعه — "{1,4}" عنصر A نیست.` });
+    }
+  }
+
+  // Q5: 7 ∈ B -> true
+  if(selectedQ5 === null){
+    lines.push({ id:'q5', ok:false, text:'ه) پاسخی انتخاب نشده است.' });
+  } else {
+    const ok = (selectedQ5 === correctAnswers.q5);
+    if(ok){
+      total += 10;
+      lines.push({ id:'q5', ok:true, text:`ه) درست — آفرین! 7 ∈ B (عدد ۷ در B وجود دارد).` });
+    } else {
+      lines.push({ id:'q5', ok:false, text:`ه) نادرست — نه؛ عدد ۷ داخل مجموعهٔ B وجود دارد.` });
+    }
+  }
+
+  return { lines, total };
+}
+
+/* ---------- نمایش نتایج (فقط بعد از ارسال) ---------- */
+function showResults(res){
+  resultsArea.innerHTML = '';
+  res.lines.forEach(l=>{
+    const div = document.createElement('div');
+    div.className = 'result-line';
+    const left = document.createElement('div');
+    left.style.textAlign = 'right';
+    left.innerHTML = `<div style="font-weight:900">${l.text}</div>`;
+    const right = document.createElement('div'); right.style.minWidth = '110px';
+    if(l.ok) right.innerHTML = `<span class="ok">✔ درست</span>`; else right.innerHTML = `<span class="nok">✖ غلط</span>`;
+    div.appendChild(left); div.appendChild(right);
+    resultsArea.appendChild(div);
+  });
+  const sum = document.createElement('div');
+  sum.style.marginTop='10px'; sum.style.fontWeight='900'; sum.style.color='#ffd67c';
+  sum.textContent = `امتیاز کلی: ${res.total} از 50`;
+  resultsArea.appendChild(sum);
+
+  finalChoice.style.display = 'block';
+}
+
+/* ---------- قفل و ارسال خودکار وقتی زمان تمام شد ---------- */
+function autoFinish(){
+  // disable UI
+  disableInputs();
+  const res = gradeAll();
+  showResults(res);
+  timerEl.textContent = '00:00';
+}
+
+/* ---------- دکمه‌ها ---------- */
+function disableInputs(){
+  q1Input.disabled = true; q2Input.disabled = true; q3Input.disabled = true;
+  [q4True,q4False,q5True,q5False].forEach(b=> b.disabled = true);
+  finishBtn.disabled = true;
+  startBtn.disabled = false;
+}
+function enableInputs(){
+  q1Input.disabled = false; q2Input.disabled = false; q3Input.disabled = false;
+  [q4True,q4False,q5True,q5False].forEach(b=> b.disabled = false);
+  finishBtn.disabled = false;
+}
+
+startBtn.addEventListener('click', ()=>{
+  // reset fields
+  q1Input.value = ''; q2Input.value = ''; q3Input.value = '';
+  selectedQ4 = null; selectedQ5 = null;
+  [q4True,q4False,q5True,q5False].forEach(b=> b.classList.remove('selected'));
+  resultsArea.innerHTML = '';
+  finalChoice.style.display = 'none';
+  learnedMsg.textContent = '';
+  enableInputs();
+  startTimer();
+});
+
+finishBtn.addEventListener('click', ()=>{
+  clearInterval(timerInterval);
+  disableInputs();
+  const res = gradeAll();
+  showResults(res);
+  timerEl.textContent = formatTime(timeLeft);
+});
+
+/* ---------- پاسخ نهایی بله/خیر ---------- */
+learnedYes.addEventListener('click', ()=> {
+  learnedMsg.textContent = 'یِ باریکلااااا!!! 🎉 تو عالی بودی.';
+  learnedMsg.style.color = 'var(--good)';
+});
+learnedNo.addEventListener('click', ()=> {
+  learnedMsg.textContent = 'عهه — دوباره تلاش کن؛ از اول مرور کن و مجدداً آزمون بده.';
+  learnedMsg.style.color = 'var(--bad)';
+});
+
+/* ---------- وقتی صفحه بارگذاری شد ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  timerEl.textContent = formatTime(timeLeft);
+  // نمودار: دایره‌ها و اعداد به صورت آماده در DOM قرار گرفته‌اند؛ تغییرات ظاهری اعمال شد
+});
+</script>
+</body>
+</html>
